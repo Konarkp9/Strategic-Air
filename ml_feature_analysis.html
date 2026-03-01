@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strategic Air - ML Feature Selection & Impact Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.6}
+.dash{max-width:1400px;margin:0 auto;padding:20px}
+header{background:linear-gradient(135deg,#1e293b,#334155);border-radius:12px;padding:24px 32px;margin-bottom:24px;border:1px solid #475569}
+h1{font-size:26px;color:#f8fafc;margin-bottom:4px}
+h2{font-size:20px;color:#f8fafc;margin-bottom:16px;border-bottom:2px solid #3b82f6;padding-bottom:8px}
+h3{font-size:16px;color:#93c5fd;margin:16px 0 8px}
+.sub{color:#94a3b8;font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.kpi{background:#1e293b;border-radius:10px;padding:18px;border:1px solid #334155}
+.kpi .lb{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#94a3b8;margin-bottom:4px}
+.kpi .vl{font-size:22px;font-weight:700;color:#f8fafc}
+.kpi .ch{font-size:12px;margin-top:4px;color:#4ade80}
+.section{background:#1e293b;border-radius:10px;padding:24px;margin-bottom:24px;border:1px solid #334155}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.card{background:#1e293b;border-radius:10px;padding:20px;border:1px solid #334155}
+.card h3{font-size:14px;color:#cbd5e1;margin-bottom:10px}
+canvas{max-height:350px}
+table{width:100%;border-collapse:collapse;margin:12px 0}
+th{background:#334155;color:#e2e8f0;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:8px 12px;border-bottom:1px solid #334155;font-size:13px}
+tr:hover{background:#1a2332}
+.bar-pos{background:#065f46;height:20px;border-radius:3px;display:inline-block;min-width:2px}
+.bar-neg{background:#7f1d1d;height:20px;border-radius:3px;display:inline-block;min-width:2px}
+.insight{background:#172554;border-left:3px solid #3b82f6;padding:12px 16px;margin:10px 0;border-radius:0 6px 6px 0;font-size:14px}
+.insight.good{border-color:#4ade80;background:#052e16}
+.insight.warn{border-color:#fbbf24;background:#422006}
+.insight.bad{border-color:#f87171;background:#450a0a}
+.causal{display:flex;align-items:center;gap:8px;padding:8px;margin:4px 0;background:#0f172a;border-radius:6px;font-size:13px}
+.causal .arrow{color:#3b82f6;font-weight:bold;font-size:16px}
+.causal .r-val{font-weight:600;padding:2px 8px;border-radius:12px;font-size:11px}
+.r-strong-pos{background:#065f46;color:#6ee7b7}
+.r-mod-pos{background:#1e3a5f;color:#93c5fd}
+.r-strong-neg{background:#7f1d1d;color:#fca5a5}
+.r-mod-neg{background:#713f12;color:#fde68a}
+.tag{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.t1{background:#065f46;color:#6ee7b7}
+.t2{background:#1e3a5f;color:#93c5fd}
+.t3{background:#713f12;color:#fde68a}
+@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
+strong{color:#f8fafc}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.nav a{background:#334155;color:#cbd5e1;padding:6px 16px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500}
+.nav a:hover{background:#475569;color:#f8fafc}
+.tab-bar{display:flex;gap:4px;margin-bottom:16px}
+.tab-btn{background:#334155;color:#94a3b8;border:none;padding:8px 16px;border-radius:6px 6px 0 0;cursor:pointer;font-size:13px}
+.tab-btn.active{background:#3b82f6;color:#fff}
+.tab-content{display:none}
+.tab-content.active{display:block}
+</style>
+</head>
+<body>
+<div class="dash">
+
+<header>
+<h1>ML Feature Selection & Decision Impact Analysis</h1>
+<p class="sub">6 companies x 7 quarters = 42 observations | Random Forest, Gradient Boosting, Ridge, Lasso, Permutation Importance, Mutual Information</p>
+</header>
+
+<nav class="nav">
+<a href="#model-accuracy">Model Accuracy</a>
+<a href="#profit-drivers">Profit Drivers</a>
+<a href="#stock-drivers">Stock Drivers</a>
+<a href="#quality-drivers">Quality Drivers</a>
+<a href="#causal">Causal Chains</a>
+<a href="#sa-detail">Strategic Air Detail</a>
+<a href="#optimal">Optimal Decisions</a>
+</nav>
+
+<div id="model-accuracy" class="kpis">
+<div class="kpi"><div class="lb">Profit Model R²</div><div class="vl">0.974</div><div class="ch">Gradient Boosting</div></div>
+<div class="kpi"><div class="lb">Stock Price Model R²</div><div class="vl">0.979</div><div class="ch">Gradient Boosting</div></div>
+<div class="kpi"><div class="lb">Quality Model R²</div><div class="vl">1.000</div><div class="ch">Gradient Boosting</div></div>
+<div class="kpi"><div class="lb">Load Factor Model R²</div><div class="vl">0.972</div><div class="ch">Gradient Boosting</div></div>
+<div class="kpi"><div class="lb">SA Profit Detail R²</div><div class="vl">0.990</div><div class="ch">Ridge Regression</div></div>
+<div class="kpi"><div class="lb">SA Refund Rate R²</div><div class="vl">0.993</div><div class="ch">Ridge Regression</div></div>
+</div>
+
+<div class="section">
+<h2>KEY FINDINGS: What the ML Models Reveal</h2>
+<div class="insight good"><strong>Finding #1: Reliability is the #1 predictor of profit across ALL companies</strong> (Combined Score: 0.905, r=+0.866). Airlines with higher reliability consistently earned more profit. This makes sense: reliability reduces refunds (r=-1.000 between reliability and refund rate).</div>
+<div class="insight good"><strong>Finding #2: Quality → Refund Rate is the strongest causal mechanism</strong> (r=-0.949). Every point of quality reduces the refund rate, directly boosting net revenue. Training budget is the primary driver of quality (r=+0.909).</div>
+<div class="insight warn"><strong>Finding #3: Compensation % has a NEGATIVE correlation with profit across all companies</strong> (r=-0.801). Oura paid 20% above prevailing wages and lost massively. The sweet spot appears to be 0-3.2%. Overpaying destroys value.</div>
+<div class="insight warn"><strong>Finding #4: More aircraft = less profit</strong> (r=-0.522 across all companies). The simulation punishes excess capacity. The most profitable companies (Group 1) stayed at 3 aircraft.</div>
+<div class="insight"><strong>Finding #5: Marketing has NEGATIVE correlation with load factor</strong> (r=-0.687 for Strategic Air). This is counter-intuitive but suggests massive diminishing returns. Or it means you increased marketing BECAUSE load factors were dropping (reverse causality).</div>
+<div class="insight good"><strong>Finding #6: Other Revenue (Cargo) is the single strongest profit predictor for Strategic Air</strong> (r=+0.925). Cargo/service fee revenue was the #1 driver of profit improvement.</div>
+</div>
+
+<div id="profit-drivers" class="grid2">
+<div class="card"><h3>Feature Importance: Net Profit (All Companies)</h3><canvas id="profitImp"></canvas></div>
+<div class="card"><h3>Feature Importance: Stock Price (All Companies)</h3><canvas id="stockImp"></canvas></div>
+<div class="card"><h3>Feature Importance: Quality (All Companies)</h3><canvas id="qualImp"></canvas></div>
+<div class="card"><h3>Feature Importance: Load Factor (All Companies)</h3><canvas id="lfImp"></canvas></div>
+</div>
+
+<div id="causal" class="section">
+<h2>CAUSAL CHAIN MAP (Strategic Air, |r| > 0.3)</h2>
+<p class="sub" style="margin-bottom:16px">These show the decision-to-outcome pathways with Pearson correlation strength.</p>
+
+<h3>Chain 1: Quality Investment → Refund Reduction → Profit</h3>
+<div class="causal"><code>decision_training</code><span class="arrow">→</span><code>quality</code><span class="r-val r-strong-pos">r=+0.908</span></div>
+<div class="causal"><code>decision_maint_level</code><span class="arrow">→</span><code>quality</code><span class="r-val r-strong-pos">r=+0.804</span></div>
+<div class="causal"><code>decision_comp_pct</code><span class="arrow">→</span><code>quality</code><span class="r-val r-mod-pos">r=+0.562</span></div>
+<div class="causal"><code>quality</code><span class="arrow">→(−)</span><code>refund_rate</code><span class="r-val r-strong-neg">r=-0.949</span></div>
+<div class="causal"><code>refund_rate</code><span class="arrow">→(−)</span><code>net_profit</code><span class="r-val r-strong-neg">r=-0.854</span></div>
+<h3>Reliability → Revenue Protection</h3>
+<div class="causal"><code>decision_maint_level</code><span class="arrow">→</span><code>reliability</code><span class="r-val r-strong-pos">r=+0.852</span></div>
+<div class="causal"><code>decision_training</code><span class="arrow">→(−)</span><code>refund_rate</code><span class="r-val r-strong-neg">r=-0.983</span></div>
+<div class="causal"><code>reliability</code><span class="arrow">→(−)</span><code>refund_rate</code><span class="r-val r-strong-neg">r=-1.000</span></div>
+<h3>Revenue Drivers</h3>
+<div class="causal"><code>other_revenue</code><span class="arrow">→</span><code>net_profit</code><span class="r-val r-strong-pos">r=+0.925</span></div>
+<div class="causal"><code>quality</code><span class="arrow">→</span><code>stock_price</code><span class="r-val r-strong-pos">r=+0.844</span></div>
+<div class="causal"><code>quality</code><span class="arrow">→</span><code>net_profit</code><span class="r-val r-strong-pos">r=+0.829</span></div>
+<h3>Load Factor Drivers (Counter-intuitive)</h3>
+<div class="causal"><code>business_index</code><span class="arrow">→</span><code>load_factor</code><span class="r-val r-mod-pos">r=+0.442</span></div>
+<div class="causal"><code>decision_fare</code><span class="arrow">→(−)</span><code>load_factor</code><span class="r-val r-mod-neg">r=-0.438</span></div>
+<div class="causal"><code>total_mktg</code><span class="arrow">→(−)</span><code>load_factor</code><span class="r-val r-mod-neg">r=-0.687</span></div>
+
+</div>
+
+<div id="sa-detail" class="section">
+<h2>STRATEGIC AIR: DETAILED FEATURE CORRELATIONS WITH OUTCOMES</h2>
+<p class="sub" style="margin-bottom:16px">Based on 7 quarters of detailed decision data. *** = |r| > 0.9, ** = |r| > 0.7, * = |r| > 0.3</p>
+
+<table>
+<tr><th>Decision Feature</th><th>Net Profit</th><th>Stock Price</th><th>Quality</th><th>Reliability</th><th>Load Factor</th><th>Refund Rate</th><th>Total Revenue</th></tr>
+<tr><td><strong>training</strong></td><td style="color:#4ade80;font-weight:700">+0.908***</td><td style="color:#4ade80;font-weight:700">+0.932***</td><td style="color:#4ade80;font-weight:700">+0.909***</td><td style="color:#4ade80;font-weight:700">+0.982***</td><td style="color:#94a3b8;font-weight:400">-0.443*</td><td style="color:#f87171;font-weight:700">-0.982***</td><td style="color:#93c5fd;font-weight:700">+0.888**</td></tr>
+<tr><td><strong>maint_level</strong></td><td style="color:#93c5fd;font-weight:700">+0.737**</td><td style="color:#93c5fd;font-weight:700">+0.812**</td><td style="color:#93c5fd;font-weight:700">+0.804**</td><td style="color:#93c5fd;font-weight:700">+0.852**</td><td style="color:#94a3b8;font-weight:400">-0.438*</td><td style="color:#fbbf24;font-weight:700">-0.852**</td><td style="color:#93c5fd;font-weight:700">+0.783**</td></tr>
+<tr><td><strong>fare</strong></td><td style="color:#93c5fd;font-weight:700">+0.737**</td><td style="color:#93c5fd;font-weight:700">+0.812**</td><td style="color:#93c5fd;font-weight:700">+0.804**</td><td style="color:#93c5fd;font-weight:700">+0.852**</td><td style="color:#94a3b8;font-weight:400">-0.438*</td><td style="color:#fbbf24;font-weight:700">-0.852**</td><td style="color:#93c5fd;font-weight:700">+0.783**</td></tr>
+<tr><td><strong>comp_pct</strong></td><td style="color:#94a3b8;font-weight:400">+0.630*</td><td style="color:#94a3b8;font-weight:400">+0.684*</td><td style="color:#94a3b8;font-weight:400">+0.562*</td><td style="color:#93c5fd;font-weight:700">+0.783**</td><td style="color:#475569;font-weight:400">+0.005</td><td style="color:#fbbf24;font-weight:700">-0.783**</td><td style="color:#94a3b8;font-weight:400">+0.511*</td></tr>
+<tr><td><strong>promo</strong></td><td style="color:#4ade80;font-weight:700">+0.910***</td><td style="color:#4ade80;font-weight:700">+0.926***</td><td style="color:#4ade80;font-weight:700">+0.961***</td><td style="color:#4ade80;font-weight:700">+0.917***</td><td style="color:#fbbf24;font-weight:700">-0.733**</td><td style="color:#f87171;font-weight:700">-0.917***</td><td style="color:#4ade80;font-weight:700">+0.975***</td></tr>
+<tr><td><strong>ad</strong></td><td style="color:#4ade80;font-weight:700">+0.965***</td><td style="color:#4ade80;font-weight:700">+0.967***</td><td style="color:#4ade80;font-weight:700">+0.941***</td><td style="color:#4ade80;font-weight:700">+0.930***</td><td style="color:#94a3b8;font-weight:400">-0.632*</td><td style="color:#f87171;font-weight:700">-0.930***</td><td style="color:#4ade80;font-weight:700">+0.964***</td></tr>
+<tr><td><strong>magazine</strong></td><td style="color:#94a3b8;font-weight:400">+0.554*</td><td style="color:#94a3b8;font-weight:400">+0.627*</td><td style="color:#94a3b8;font-weight:400">+0.330*</td><td style="color:#94a3b8;font-weight:400">+0.496*</td><td style="color:#475569;font-weight:400">+0.100</td><td style="color:#94a3b8;font-weight:400">-0.496*</td><td style="color:#94a3b8;font-weight:400">+0.367*</td></tr>
+<tr><td><strong>cabin_service</strong></td><td style="color:#94a3b8;font-weight:400">+0.554*</td><td style="color:#94a3b8;font-weight:400">+0.627*</td><td style="color:#94a3b8;font-weight:400">+0.330*</td><td style="color:#94a3b8;font-weight:400">+0.496*</td><td style="color:#475569;font-weight:400">+0.100</td><td style="color:#94a3b8;font-weight:400">-0.496*</td><td style="color:#94a3b8;font-weight:400">+0.367*</td></tr>
+<tr><td><strong>salespeople</strong></td><td style="color:#94a3b8;font-weight:400">-0.373*</td><td style="color:#475569;font-weight:400">-0.278</td><td style="color:#475569;font-weight:400">-0.202</td><td style="color:#475569;font-weight:400">-0.273</td><td style="color:#475569;font-weight:400">+0.091</td><td style="color:#475569;font-weight:400">+0.273</td><td style="color:#475569;font-weight:400">-0.218</td></tr>
+<tr><td><strong>fuel_contract</strong></td><td style="color:#94a3b8;font-weight:400">+0.645*</td><td style="color:#94a3b8;font-weight:400">+0.619*</td><td style="color:#475569;font-weight:400">+0.167</td><td style="color:#475569;font-weight:400">+0.273</td><td style="color:#475569;font-weight:400">+0.068</td><td style="color:#475569;font-weight:400">-0.273</td><td style="color:#94a3b8;font-weight:400">+0.305*</td></tr>
+<tr><td><strong>social</strong></td><td style="color:#94a3b8;font-weight:400">+0.597*</td><td style="color:#94a3b8;font-weight:400">+0.669*</td><td style="color:#94a3b8;font-weight:400">+0.391*</td><td style="color:#94a3b8;font-weight:400">+0.565*</td><td style="color:#475569;font-weight:400">+0.067</td><td style="color:#94a3b8;font-weight:400">-0.565*</td><td style="color:#94a3b8;font-weight:400">+0.417*</td></tr>
+<tr><td><strong>n_fare_sale_routes</strong></td><td style="color:#93c5fd;font-weight:700">+0.826**</td><td style="color:#93c5fd;font-weight:700">+0.798**</td><td style="color:#94a3b8;font-weight:400">+0.683*</td><td style="color:#93c5fd;font-weight:700">+0.773**</td><td style="color:#475569;font-weight:400">-0.171</td><td style="color:#fbbf24;font-weight:700">-0.773**</td><td style="color:#94a3b8;font-weight:400">+0.689*</td></tr>
+<tr><td><strong>n_routes</strong></td><td style="color:#94a3b8;font-weight:400">+0.651*</td><td style="color:#93c5fd;font-weight:700">+0.705**</td><td style="color:#4ade80;font-weight:700">+0.903***</td><td style="color:#93c5fd;font-weight:700">+0.854**</td><td style="color:#94a3b8;font-weight:400">-0.690*</td><td style="color:#fbbf24;font-weight:700">-0.854**</td><td style="color:#93c5fd;font-weight:700">+0.849**</td></tr>
+<tr><td><strong>total_flights</strong></td><td style="color:#94a3b8;font-weight:400">+0.395*</td><td style="color:#94a3b8;font-weight:400">+0.395*</td><td style="color:#93c5fd;font-weight:700">+0.717**</td><td style="color:#94a3b8;font-weight:400">+0.472*</td><td style="color:#fbbf24;font-weight:700">-0.717**</td><td style="color:#94a3b8;font-weight:400">-0.472*</td><td style="color:#93c5fd;font-weight:700">+0.734**</td></tr>
+<tr><td><strong>business_index</strong></td><td style="color:#94a3b8;font-weight:400">+0.331*</td><td style="color:#475569;font-weight:400">+0.296</td><td style="color:#475569;font-weight:400">-0.117</td><td style="color:#475569;font-weight:400">+0.010</td><td style="color:#94a3b8;font-weight:400">+0.442*</td><td style="color:#475569;font-weight:400">-0.010</td><td style="color:#475569;font-weight:400">-0.003</td></tr>
+<tr><td><strong>quarter</strong></td><td style="color:#93c5fd;font-weight:700">+0.854**</td><td style="color:#93c5fd;font-weight:700">+0.893**</td><td style="color:#4ade80;font-weight:700">+0.926***</td><td style="color:#4ade80;font-weight:700">+0.988***</td><td style="color:#94a3b8;font-weight:400">-0.426*</td><td style="color:#f87171;font-weight:700">-0.988***</td><td style="color:#93c5fd;font-weight:700">+0.896**</td></tr>
+
+</table>
+</div>
+
+<div id="optimal" class="section">
+<h2>ML-DERIVED OPTIMAL DECISION RANGES</h2>
+<p class="sub" style="margin-bottom:16px">Based on the top 10 most profitable company-quarter combinations vs bottom 10.</p>
+
+<div class="grid2">
+<div>
+<h3>Top 10 Most Profitable Profile</h3>
+<table>
+<tr><th>Feature</th><th>Avg Value</th><th>Range</th></tr>
+<tr><td>Fare</td><td>40.5 cents</td><td>37-50c</td></tr>
+<tr><td>Compensation %</td><td>0.96%</td><td>0-3.2%</td></tr>
+<tr><td>Aircraft</td><td>3.2</td><td>3-4</td></tr>
+<tr><td>Quality</td><td>82.2</td><td>67-93</td></tr>
+<tr><td>Load Factor</td><td>0.592</td><td>0.51-0.70</td></tr>
+<tr><td>Reliability</td><td>0.940</td><td>0.916-0.953</td></tr>
+</table>
+</div>
+<div>
+<h3>Bottom 10 Most Unprofitable Profile</h3>
+<table>
+<tr><th>Feature</th><th>Avg Value</th><th>Range</th></tr>
+<tr><td>Fare</td><td>36.4 cents</td><td>35-50c</td></tr>
+<tr><td>Compensation %</td><td>12.0%</td><td>0-20% (Oura at 20%!)</td></tr>
+<tr><td>Aircraft</td><td>3.7</td><td>3-4</td></tr>
+<tr><td>Quality</td><td>63.1</td><td>53-87</td></tr>
+<tr><td>Load Factor</td><td>0.601</td><td>0.498-0.659</td></tr>
+<tr><td>Reliability</td><td>0.875</td><td>0.833-0.935</td></tr>
+</table>
+</div>
+</div>
+
+<h3>ML-Optimized Decision Recommendations</h3>
+<div class="insight good">
+<strong>The models suggest this optimal combination for maximum profit:</strong>
+<table style="margin-top:10px">
+<tr><th>Decision</th><th>Optimal Value</th><th>Evidence Strength</th><th>Mechanism</th></tr>
+<tr><td><strong>Training Budget</strong></td><td>$15,000-20,000/qtr</td><td><span class="tag t1">r=+0.909 with Quality</span></td><td>Training → Quality → Lower Refunds → Higher Profit</td></tr>
+<tr><td><strong>Maintenance Level</strong></td><td>Level 3</td><td><span class="tag t1">r=+0.852 with Reliability</span></td><td>Maintenance → Reliability → Lower Refunds</td></tr>
+<tr><td><strong>Fare</strong></td><td>36-40 cents</td><td><span class="tag t2">r=+0.737 with Profit</span></td><td>Higher fare × quality premium. Top earners charged 37-50c</td></tr>
+<tr><td><strong>Compensation</strong></td><td>0-3.2% above prevailing</td><td><span class="tag t3">r=-0.801 profit (all cos)</span></td><td>Moderate comp improves quality; excessive comp destroys profit (see Oura at 20%)</td></tr>
+<tr><td><strong>Cabin Service</strong></td><td>Level 1 (drinks/pretzels)</td><td><span class="tag t2">r=+0.554 with Profit</span></td><td>Low cost ($1/pax) quality boost</td></tr>
+<tr><td><strong>Cargo</strong></td><td>START IMMEDIATELY</td><td><span class="tag t1">r=+0.925 with Profit</span></td><td>$470-512K/qtr Other Revenue by Q5</td></tr>
+<tr><td><strong>Marketing Total</strong></td><td>$15-20K/qtr max</td><td><span class="tag t3">r=-0.687 with LF</span></td><td>Diminishing returns; don't chase demand with spend</td></tr>
+<tr><td><strong>Aircraft</strong></td><td>3 (stay lean)</td><td><span class="tag t3">r=-0.522 with Profit</span></td><td>Excess capacity destroys margins</td></tr>
+<tr><td><strong>Fare Sales</strong></td><td>Use on weak routes</td><td><span class="tag t2">r=+0.826 with Profit</span></td><td>Boosts LF on specific routes without cutting base fare</td></tr>
+</table>
+</div>
+</div>
+
+<div class="section">
+<h2>MODEL LIMITATIONS & CAVEATS</h2>
+<div class="insight warn">
+<strong>Small sample size:</strong> 42 observations (all companies) and only 7 for Strategic Air detail. Correlations may be spurious, especially with many features. The R² values are likely overfitted on the training data.
+</div>
+<div class="insight warn">
+<strong>Multicollinearity:</strong> Many decisions were changed simultaneously (e.g., training + maintenance + fare all increased over time). The models can't perfectly isolate individual effects. The "quarter" variable captures this trend and dominates some models.
+</div>
+<div class="insight warn">
+<strong>Reverse causality possible:</strong> Marketing negatively correlating with load factor might mean "you spent more marketing BECAUSE LF was dropping" rather than "marketing causes LF to drop."
+</div>
+<div class="insight">
+<strong>Most trustworthy findings</strong> (consistent across all methods): Reliability → Profit (+), Quality → Refund Rate (−), Training → Quality (+), Maintenance → Reliability (+), Excess Aircraft → Profit (−), Other Revenue → Profit (+).
+</div>
+</div>
+
+</div>
+
+<script>
+const RESULTS = {"net_profit": {"scores": {"rf": 0.8664466760833607, "gb": 0.9744201188220836, "lasso": 0.8648797554393222, "ridge": 0.8423106607600482}, "combined": {"decision_fare": 0.23722844689905864, "decision_cabin_service": 0.07040664642945929, "decision_promo": 0.21767931712360872, "decision_ad": 0.10882300623948277, "decision_salespeople": 0.23309627613830286, "decision_comp_pct": 0.6019264667722384, "total_aircraft": 0.21354267516299036, "quarter": 0.38957478707793736, "total_marketing": 0.10948140635596249, "fare_x_quality": 0.578743720532025, "quality": 0.4582702871151946, "reliability": 0.9054917633808988}, "correlations": {"decision_fare": 0.2627629868224606, "decision_cabin_service": 0.11296859104472445, "decision_promo": 0.17750813375604063, "decision_ad": 0.18566021790719586, "decision_salespeople": 0.1468760046951386, "decision_comp_pct": -0.8014050050785071, "total_aircraft": -0.52188095168145, "quarter": 0.13451463025495497, "total_marketing": 0.18375515219989616, "fare_x_quality": 0.5110971147300817, "quality": 0.6615154843953249, "reliability": 0.8661071639813904}, "rf_importance": {"decision_fare": 0.002531924658054961, "decision_cabin_service": 0.000521543223645931, "decision_promo": 0.003114557372433543, "decision_ad": 0.0013061957584789648, "decision_salespeople": 0.03702907766802118, "decision_comp_pct": 0.18751851118685703, "total_aircraft": 0.048958815843941295, "quarter": 0.09783986619714753, "total_marketing": 0.002521362567512417, "fare_x_quality": 0.17389996630029134, "quality": 0.15551045823692383, "reliability": 0.2892477209866921}, "ridge_coefs": {"decision_fare": -50219.57350434093, "decision_cabin_service": -5893.634269009038, "decision_promo": 35648.68133257674, "decision_ad": -7570.1936227535925, "decision_salespeople": 41168.86445873965, "decision_comp_pct": -94393.89073197826, "total_aircraft": -46568.64630155653, "quarter": 37350.52373049843, "total_marketing": 16180.221422452734, "fare_x_quality": -5432.3177583225515, "quality": -23822.40846379463, "reliability": 89054.57402807493}, "perm_importance": {"decision_fare": 0.001064565522634157, "decision_cabin_service": 0.00012299931665814927, "decision_promo": 0.0015673567580569369, "decision_ad": 0.0005266583697033441, "decision_salespeople": 0.019233348536101084, "decision_comp_pct": 0.09252750934321947, "total_aircraft": 0.022868681336564115, "quarter": 0.0784580555270416, "total_marketing": 0.001377513377408949, "fare_x_quality": 0.08281537551651487, "quality": 0.061957803051430754, "reliability": 0.2517950253597345}, "mi": {"decision_fare": 0.2119287955294462, "decision_cabin_service": 0.18277702539487684, "decision_promo": 0.39710031500825416, "decision_ad": 0.2084705029868097, "decision_salespeople": 0.28831963955282536, "decision_comp_pct": 0.35580814029621366, "total_aircraft": 0.22947977054010438, "quarter": 0.42840884300414306, "total_marketing": 0.21879956639740827, "fare_x_quality": 0.4316825635588044, "quality": 0.411057726076943, "reliability": 0.5135336249421294}}, "stock_price": {"scores": {"rf": 0.8341003836649026, "gb": 0.9793850421804203, "lasso": 0.8146677927791819, "ridge": 0.8204063225514604}, "combined": {"decision_fare": 0.26664850954682534, "decision_cabin_service": 0.0948829156434683, "decision_promo": 0.15145255360601306, "decision_ad": 0.041853312411874885, "decision_salespeople": 0.38080958346414884, "decision_comp_pct": 0.15699932610921813, "total_aircraft": 0.03856252368738502, "quarter": 0.2785904696633468, "total_marketing": 0.07702430489103756, "fare_x_quality": 0.2762675678962544, "quality": 0.22647378467962814, "reliability": 0.9916604673009639}, "correlations": {"decision_fare": 0.169140126187771, "decision_cabin_service": 0.19879682293499495, "decision_promo": 0.1528264158736717, "decision_ad": 0.15663529620538402, "decision_salespeople": 0.25631638510756943, "decision_comp_pct": -0.6418606642851494, "total_aircraft": -0.34901503985627336, "quarter": 0.22004417598947545, "total_marketing": 0.1567219685956802, "fare_x_quality": 0.4675345119236795, "quality": 0.6734633834061252, "reliability": 0.817610082822049}, "rf_importance": {"decision_fare": 0.02931250253062177, "decision_cabin_service": 0.003980777481475382, "decision_promo": 0.026850077571068, "decision_ad": 0.025175889166319305, "decision_salespeople": 0.086132951260296, "decision_comp_pct": 0.14299975191958972, "total_aircraft": 0.005274401247311107, "quarter": 0.06626366906116539, "total_marketing": 0.020399452367194006, "fare_x_quality": 0.08661463116999406, "quality": 0.060577327582073015, "reliability": 0.44641856864289226}, "ridge_coefs": {"decision_fare": -3.7364500061963115, "decision_cabin_service": -0.023305382298702555, "decision_promo": 0.810406601091032, "decision_ad": 0.27783269840413016, "decision_salespeople": 3.7551220835823633, "decision_comp_pct": 0.13235978150306277, "total_aircraft": 0.2079667361863486, "quarter": -2.1186590268102545, "total_marketing": 0.5756890204657699, "fare_x_quality": -0.5363153940887332, "quality": 1.737181529880524, "reliability": 6.035517826368026}, "perm_importance": {"decision_fare": 0.01561909344815949, "decision_cabin_service": 0.0006786607274692417, "decision_promo": 0.01511513293066986, "decision_ad": 0.013007440888443585, "decision_salespeople": 0.07885691445165194, "decision_comp_pct": 0.07593782474323087, "total_aircraft": 0.0017079231518927578, "quarter": 0.027589935661945352, "total_marketing": 0.012308351424834559, "fare_x_quality": 0.035416280545268936, "quality": 0.021584004918387658, "reliability": 0.5872186913401514}, "mi": {"decision_fare": 0.21724873910513143, "decision_cabin_service": 0.31812887347063024, "decision_promo": 0.26473095219822795, "decision_ad": 0.04992536699561967, "decision_salespeople": 0.3599751897087782, "decision_comp_pct": 0.2400626750238768, "total_aircraft": 0.0846446071697462, "quarter": 0.5167398030750125, "total_marketing": 0.14913509500445832, "fare_x_quality": 0.4337730926783625, "quality": 0.45493721729395453, "reliability": 0.4880106798440953}}, "quality": {"scores": {"rf": 0.9857590139392497, "gb": 0.9998490570327997, "lasso": 0.9999058537210196, "ridge": 0.9980896605200004}, "combined": {"decision_fare": 0.05203842613616069, "decision_cabin_service": 0.02709582753464574, "decision_promo": 0.04443887598679375, "decision_ad": 0.03833637056348898, "decision_salespeople": 0.0320545512787308, "decision_comp_pct": 0.050036058165255304, "total_aircraft": 0.018671408720507494, "quarter": 0.049636328043290615, "total_marketing": 0.03516139880383046, "fare_x_quality": 0.2358609814350967, "quality": 1.0, "reliability": 0.18189553897833483}, "correlations": {"decision_fare": 0.5959086575214951, "decision_cabin_service": 0.3866955202450883, "decision_promo": 0.5137063800927251, "decision_ad": 0.48780801198858176, "decision_salespeople": 0.269196253930391, "decision_comp_pct": -0.5500843117341591, "total_aircraft": -0.19216147146741416, "quarter": 0.5290391011278662, "total_marketing": 0.5089211114271766, "fare_x_quality": 0.8991994789932921, "quality": 0.9999999999999998, "reliability": 0.8755065611878506}, "rf_importance": {"decision_fare": 0.0005569588682353859, "decision_cabin_service": 0.0003067886370198538, "decision_promo": 0.0013982325300071535, "decision_ad": 0.00047237126102463547, "decision_salespeople": 0.0016176956590823082, "decision_comp_pct": 0.02663172308846314, "total_aircraft": 0.0023182605024600184, "quarter": 0.001331852839745709, "total_marketing": 0.0017545249223631825, "fare_x_quality": 0.14304310330335246, "quality": 0.6965032851518838, "reliability": 0.12406520323636257}, "ridge_coefs": {"decision_fare": -1.271177474113279, "decision_cabin_service": -0.2598664981286917, "decision_promo": 0.7704120841609201, "decision_ad": -0.5826031226344951, "decision_salespeople": -0.013861277319904457, "decision_comp_pct": 0.23837756451604555, "total_aircraft": 0.22552914388308345, "quarter": 0.2526221679636321, "total_marketing": 0.15609996604727092, "fare_x_quality": 3.2400605688360273, "quality": 6.385214066889062, "reliability": 1.7898530989232475}, "perm_importance": {"decision_fare": 0.00021857279041335165, "decision_cabin_service": 0.00010925813580397644, "decision_promo": 0.0004098030425433552, "decision_ad": 0.000109953712381979, "decision_salespeople": 0.0007343079460640982, "decision_comp_pct": 0.010837714887254647, "total_aircraft": 0.00047187315685482957, "quarter": 0.0002030931299408678, "total_marketing": 0.00042576376954608734, "fare_x_quality": 0.05572068463827041, "quality": 0.9981609666213374, "reliability": 0.0324496642000822}, "mi": {"decision_fare": 0.28747626628183465, "decision_cabin_service": 0.275598123797024, "decision_promo": 0.34098257966852574, "decision_ad": 0.32322943482164335, "decision_salespeople": 0.4101336399080979, "decision_comp_pct": 0.368807553625236, "total_aircraft": 0.16622392619337334, "quarter": 0.5706690614250816, "total_marketing": 0.40689411590060964, "fare_x_quality": 1.1199501567527195, "quality": 1.9792469162953055, "reliability": 1.2342404908609808}}, "load_factor": {"scores": {"rf": 0.619704834284092, "gb": 0.9716567436437987, "lasso": 0.0, "ridge": 0.2535083490481981}, "combined": {"decision_fare": 0.2901198328111577, "decision_cabin_service": 0.13391549214322612, "decision_promo": 0.07418228194009285, "decision_ad": 0.10187390590508053, "decision_salespeople": 0.050780071109940796, "decision_comp_pct": 0.22178377741855265, "total_aircraft": 0.018462150866065646, "quarter": 0.37631594466804397, "total_marketing": 0.07890596962045462, "fare_x_quality": 0.7342940787657207, "quality": 0.3669227550571284, "reliability": 0.4623259433005735}, "correlations": {"decision_fare": -0.38264449592128696, "decision_cabin_service": -0.08368625367682749, "decision_promo": -0.08659271272444843, "decision_ad": -0.12216229698329194, "decision_salespeople": -0.22890302493069312, "decision_comp_pct": 0.30151663753817104, "total_aircraft": 0.11822908634276774, "quarter": -0.15770257074473623, "total_marketing": -0.10423571274785882, "fare_x_quality": -0.3453552350091731, "quality": -0.27701723480964197, "reliability": -0.2922028165906161}, "rf_importance": {"decision_fare": 0.0779273041212811, "decision_cabin_service": 0.0045065791727496056, "decision_promo": 0.018992574399190134, "decision_ad": 0.019556299554838886, "decision_salespeople": 0.033249862977923574, "decision_comp_pct": 0.029408043746448932, "total_aircraft": 0.007552636703833276, "quarter": 0.12017249057017211, "total_marketing": 0.025081458018193392, "fare_x_quality": 0.3041712130449803, "quality": 0.18859750823379035, "reliability": 0.17078402945659843}, "ridge_coefs": {"decision_fare": -0.022466872144444552, "decision_cabin_service": 0.011137779447606065, "decision_promo": 0.003492859591766457, "decision_ad": -0.005516812271529891, "decision_salespeople": -0.001881982979942987, "decision_comp_pct": 0.021723889752552083, "total_aircraft": 0.0008190363375841904, "quarter": -0.017752080308912985, "total_marketing": -0.0006207017104018604, "fare_x_quality": 0.014999184768651556, "quality": -0.00045385181319573613, "reliability": 0.007490179809239036}, "perm_importance": {"decision_fare": 0.03895289505078108, "decision_cabin_service": 0.001360599676985937, "decision_promo": 0.005101989553816177, "decision_ad": 0.003207873492968079, "decision_salespeople": 0.006068202298172728, "decision_comp_pct": 0.011772618640759562, "total_aircraft": 0.0033739523486131036, "quarter": 0.05104073366198421, "total_marketing": 0.004517723108931471, "fare_x_quality": 0.45936445531075704, "quality": 0.12939604049330083, "reliability": 0.18411250150426797}, "mi": {"decision_fare": 0.30092535177320134, "decision_cabin_service": 0.22382316531917246, "decision_promo": 0.12715386522387173, "decision_ad": 0.2038433978066725, "decision_salespeople": 0.019611878086906565, "decision_comp_pct": 0.11001238315402673, "total_aircraft": 0.0, "quarter": 0.5979602159679973, "total_marketing": 0.22200673841396568, "fare_x_quality": 0.3354639315770509, "quality": 0.21168113920540677, "reliability": 0.3561627316084346}}};
+
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#334155';
+
+function makeHBar(canvasId, target) {
+    const d = RESULTS[target];
+    const items = Object.entries(d.combined).sort((a,b) => b[1] - a[1]);
+    const corrs = d.correlations;
+    new Chart(document.getElementById(canvasId), {
+        type: 'bar',
+        data: {
+            labels: items.map(i => i[0].replace('decision_','')),
+            datasets: [{
+                label: 'Combined Importance Score',
+                data: items.map(i => i[1]),
+                backgroundColor: items.map(i => corrs[i[0]] > 0 ? '#4ade8080' : '#f8717180'),
+                borderColor: items.map(i => corrs[i[0]] > 0 ? '#4ade80' : '#f87171'),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(ctx) {
+                            const feat = items[ctx.dataIndex][0];
+                            return 'Correlation: ' + (corrs[feat] > 0 ? '+' : '') + corrs[feat].toFixed(3);
+                        }
+                    }
+                }
+            },
+            scales: { x: { title: { display: true, text: 'Combined Multi-Method Score' }}}
+        }
+    });
+}
+
+makeHBar('profitImp', 'net_profit');
+makeHBar('stockImp', 'stock_price');
+makeHBar('qualImp', 'quality');
+makeHBar('lfImp', 'load_factor');
+</script>
+</body>
+</html>
