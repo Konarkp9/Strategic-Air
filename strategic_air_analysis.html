@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strategic Air - Algorithm Reverse Engineering & Strategy Guide</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.5; }
+.dashboard { max-width: 1400px; margin: 0 auto; padding: 20px; }
+header { background: linear-gradient(135deg, #1e293b, #334155); border-radius: 12px; padding: 24px 32px; margin-bottom: 24px; border: 1px solid #475569; }
+header h1 { font-size: 28px; font-weight: 700; color: #f8fafc; margin-bottom: 4px; }
+header p { color: #94a3b8; font-size: 14px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.kpi { background: #1e293b; border-radius: 10px; padding: 18px; border: 1px solid #334155; }
+.kpi .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 6px; }
+.kpi .value { font-size: 24px; font-weight: 700; color: #f8fafc; }
+.kpi .change { font-size: 12px; margin-top: 4px; }
+.up { color: #4ade80; }
+.down { color: #f87171; }
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.chart-card { background: #1e293b; border-radius: 10px; padding: 20px; border: 1px solid #334155; }
+.chart-card h3 { font-size: 15px; color: #cbd5e1; margin-bottom: 12px; font-weight: 600; }
+.chart-card canvas { max-height: 300px; }
+.full-width { grid-column: 1 / -1; }
+.section { background: #1e293b; border-radius: 10px; padding: 24px; margin-bottom: 24px; border: 1px solid #334155; }
+.section h2 { font-size: 20px; font-weight: 700; color: #f8fafc; margin-bottom: 16px; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; }
+.section h3 { font-size: 16px; font-weight: 600; color: #93c5fd; margin: 16px 0 8px; }
+.insight { background: #172554; border-left: 3px solid #3b82f6; padding: 12px 16px; margin: 10px 0; border-radius: 0 6px 6px 0; font-size: 14px; }
+.insight.good { border-color: #4ade80; background: #052e16; }
+.insight.bad { border-color: #f87171; background: #450a0a; }
+.insight.warn { border-color: #fbbf24; background: #422006; }
+.insight strong { color: #f8fafc; }
+.strategy-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+.strategy-table th { background: #334155; color: #e2e8f0; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.strategy-table td { padding: 10px 12px; border-bottom: 1px solid #334155; font-size: 13px; }
+.strategy-table tr:hover { background: #1a2332; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.tag-green { background: #065f46; color: #6ee7b7; }
+.tag-red { background: #7f1d1d; color: #fca5a5; }
+.tag-blue { background: #1e3a5f; color: #93c5fd; }
+.tag-yellow { background: #713f12; color: #fde68a; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .charts, .two-col { grid-template-columns: 1fr; } }
+.nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.nav a { background: #334155; color: #cbd5e1; padding: 6px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 500; }
+.nav a:hover { background: #475569; color: #f8fafc; }
+ul { padding-left: 20px; margin: 8px 0; }
+li { margin: 4px 0; font-size: 14px; }
+.gap-box { background: #1c1917; border: 2px dashed #92400e; border-radius: 8px; padding: 16px; margin: 12px 0; }
+.gap-box h4 { color: #fbbf24; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+<header>
+<h1>Strategic Air: Algorithm Reverse Engineering & Strategy Guide</h1>
+<p>Analysis of 7 quarters (Q0-Q6) of simulation data across 6 competing airlines</p>
+</header>
+
+<nav class="nav">
+<a href="#kpis">KPIs</a>
+<a href="#algorithm">Algorithm Mechanics</a>
+<a href="#strategies">Strategies</a>
+<a href="#competitors">Competitor Intel</a>
+<a href="#gaps">Knowledge Gaps</a>
+<a href="#playbook">Next Round Playbook</a>
+</nav>
+
+<div id="kpis" class="kpis">
+<div class="kpi"><div class="label">Final Stock Price</div><div class="value">$28.38</div><div class="change up">+42% from $20</div></div>
+<div class="kpi"><div class="label">Cumulative Profit</div><div class="value">$453,870</div><div class="change up">Rank #4 of 6</div></div>
+<div class="kpi"><div class="label">Final Quality</div><div class="value">89</div><div class="change up">+37% from 65</div></div>
+<div class="kpi"><div class="label">Final Reliability</div><div class="value">95.3%</div><div class="change up">+5.5% from 90.3%</div></div>
+<div class="kpi"><div class="label">Cash Position</div><div class="value">$1.7M</div><div class="change up">+1400% from $113K</div></div>
+<div class="kpi"><div class="label">Best Q Profit</div><div class="value">$133,709</div><div class="change">Quarter 5</div></div>
+</div>
+
+<div class="charts">
+<div class="chart-card"><h3>Stock Price vs Competitors</h3><canvas id="stockChart"></canvas></div>
+<div class="chart-card"><h3>Net Profit Trajectory</h3><canvas id="profitChart"></canvas></div>
+<div class="chart-card"><h3>Quality & Reliability Over Time</h3><canvas id="qualityChart"></canvas></div>
+<div class="chart-card"><h3>Revenue Composition (Pax + Other)</h3><canvas id="revenueChart"></canvas></div>
+<div class="chart-card"><h3>Cost Structure Evolution</h3><canvas id="costChart"></canvas></div>
+<div class="chart-card"><h3>Load Factor & YASM vs CASM</h3><canvas id="lfChart"></canvas></div>
+</div>
+
+<div id="algorithm" class="section">
+<h2>REVERSE-ENGINEERED ALGORITHM MECHANICS</h2>
+
+<h3>1. Demand / Load Factor Model</h3>
+<div class="insight">
+<strong>Core finding:</strong> Demand is driven by business index, fare level, marketing spend, quality/reliability scores, cabin service, route competition, and fare sales. Load factors in this sim typically range from 50-70%.
+</div>
+<ul>
+<li><strong>Business Index effect:</strong> When BI went from 105 (Q3) to 99 (Q4), load factors dropped from 0.67 to 0.61 despite no fare change. ~1 point BI change = ~1% load factor shift.</li>
+<li><strong>Fare sensitivity:</strong> Raising fare from 35c to 36c (Q2) with reduced flights: LF went UP from 0.615 to 0.625. The sim appears to have modest fare elasticity - small fare increases (1-2c) don't kill demand if quality supports it.</li>
+<li><strong>Marketing impact:</strong> Despite massive marketing spend increases (Q5-Q6: $25K each promo+ad), load factors DROPPED. This suggests marketing has diminishing returns and doesn't override macro conditions and competition.</li>
+<li><strong>Fare Sales:</strong> 1-month and 2-month sales in Q3 boosted route LF by 5-10 percentage points (2A went from 0.60 to 0.68, 2B from 0.60 to 0.70). This is one of the strongest demand levers.</li>
+<li><strong>Quality/Reliability don't directly boost LF:</strong> Quality went from 64 to 89 over Q2-Q6, but LF fell from 0.625 to 0.577. Quality affects refund rate instead.</li>
+</ul>
+
+<h3>2. Revenue Model</h3>
+<div class="insight">
+<strong>Key formula:</strong> Net Revenue = Gross Revenue - Commissions (~9.1% fixed) - Refunds (variable, 2.5-9.7%)
+</div>
+<ul>
+<li><strong>Commission rate is fixed at ~9.1%</strong> of gross revenue across all quarters. This is not controllable.</li>
+<li><strong>Refund rate is the critical lever:</strong> Started at 9.7% (Q0), dropped to 4.7% (Q6). This directly correlates with Quality + Reliability. Going from Q65/R0.903 to Q89/R0.953 cut refunds by ~50%.</li>
+<li><strong>Refund reduction = pure profit:</strong> The refund reduction from Q0 to Q6 saved ~$136K per quarter in retained revenue. This is the single biggest profit driver.</li>
+<li><strong>Other Revenue (Cargo + Service Fees):</strong> Appeared in Q5 at $472K, grew to $512K in Q6. This is a massive revenue source that dwarfs the fare increase gains.</li>
+</ul>
+
+<h3>3. Cost Model</h3>
+<div class="insight">
+<strong>Key finding:</strong> Fixed costs dominate. Fuel and maintenance are semi-variable. Marketing is fully controllable but has diminishing returns.
+</div>
+
+<table class="strategy-table">
+<tr><th>Cost Item</th><th>Nature</th><th>Driver</th><th>Q0 Value</th><th>Q6 Value</th><th>Change</th></tr>
+<tr><td>Flight Operations</td><td>Fixed per route</td><td>Number of flights & route miles</td><td>$448K</td><td>$448K</td><td>0%</td></tr>
+<tr><td>Fuel</td><td>Semi-variable</td><td>Miles flown × fuel price</td><td>$555K</td><td>$639K</td><td>+15%</td></tr>
+<tr><td>Maintenance</td><td>Semi-variable</td><td>Maint level + fleet age + miles</td><td>$382K</td><td>$461K</td><td>+21%</td></tr>
+<tr><td>Passenger Service</td><td>Semi-fixed</td><td>Base + $10K per new market entry</td><td>$303K</td><td>$303K</td><td>0%</td></tr>
+<tr><td>Cabin/Food</td><td>Per-passenger</td><td>~$1/passenger when enabled</td><td>$0</td><td>$36K</td><td>New</td></tr>
+<tr><td>Marketing</td><td>Discretionary</td><td>Your budget choices</td><td>$36K</td><td>$123K</td><td>+241%</td></tr>
+<tr><td>Lease</td><td>Fixed per aircraft</td><td>$132K per leased aircraft/quarter</td><td>$132K</td><td>$264K</td><td>+100%</td></tr>
+<tr><td>Depreciation</td><td>Fixed per owned</td><td>$48K per owned aircraft/quarter</td><td>$96K</td><td>$96K</td><td>0%</td></tr>
+<tr><td>G&A</td><td>Fixed</td><td>Appears constant at $166K</td><td>$166K</td><td>$166K</td><td>0%</td></tr>
+<tr><td>Interest</td><td>On debt balance</td><td>~2.45% of long-term loan balance/qtr</td><td>$55K</td><td>$49K</td><td>-11%</td></tr>
+</table>
+
+<h3>4. Quality Score Model</h3>
+<div class="insight good">
+<strong>Quality is the #1 profit lever.</strong> It reduces refunds, boosts stock price, and is driven by: Training Budget, Compensation Policy, Maintenance Level, and Cabin/Food Service.
+</div>
+<ul>
+<li><strong>Training Budget:</strong> Q0=$1K→Quality 65. Q1=$3K→64. Q2=$7K→64. Q3=$12K→68. Q4=$12K→75. Q5=$20K→82. Q6=$20K→89. There's a LAG: spending takes 1-2 quarters to show results.</li>
+<li><strong>Maintenance Level:</strong> Moving from Lvl 1→Lvl 2 (Q2) improved reliability from 0.903→0.914. Lvl 2→Lvl 3 (Q5) pushed it to 0.943. Each level adds ~$3.5K/aircraft/quarter.</li>
+<li><strong>Compensation:</strong> Going to +3% above prevailing improved quality substantially. The benefit plateaus around 3-3.5%.</li>
+<li><strong>Quality grows cumulatively:</strong> Even holding spending steady at Q5-Q6 levels ($20K training, +3.2% comp, Lvl 3 maint), quality kept rising from 82→89. The sim has a momentum/accumulation factor.</li>
+</ul>
+
+<h3>5. Stock Price Model</h3>
+<div class="insight">
+<strong>Stock price tracks:</strong> Cumulative profit, quality trend, and possibly competitive rank. It does NOT simply follow quarterly profit.
+</div>
+<ul>
+<li>Q4: Profit dropped to $35K but stock only fell $1 (from $24.22 to $23.27). The sim smooths stock price.</li>
+<li>Q5: Huge jump ($23.27→$29.02, +25%) driven by profit spike ($133K) AND the fact that many competitors were losing money.</li>
+<li>Group 1 had the highest stock ($35.35 in Q6) with consistent high profits AND early quality investment. The sim rewards CONSISTENCY of profit over total profit.</li>
+</ul>
+
+<h3>6. Fare Sales Mechanics</h3>
+<div class="insight warn">
+<strong>Fare Sales</strong> offer a temporary discount (reducing fare) but boost load factor significantly. Net effect varies by route.
+</div>
+<ul>
+<li>1-Month Sale appears to be ~5-7% fare discount with LF boost of 5-8 percentage points</li>
+<li>2-Month Sale appears stronger: 2B went from 0.60 LF to 0.70 in Q3</li>
+<li>3-Month Sale on 2D in Q6: LF went from 0.600 to 0.617 with 4 flights (up from 3)</li>
+<li>Sales trigger refund reduction in some cases (likely the sim counts sale passengers as more satisfied)</li>
+</ul>
+</div>
+
+<div id="strategies" class="section">
+<h2>STRATEGY ANALYSIS: WHAT WORKED & WHAT DIDN'T</h2>
+
+<div class="two-col">
+<div>
+<h3>What Worked Well</h3>
+<div class="insight good"><strong>Cargo Service (Q5+):</strong> Added $472-512K/quarter in Other Revenue with relatively low marginal cost. This was the single biggest profit driver. Start cargo IMMEDIATELY in a new game.</div>
+<div class="insight good"><strong>Quality Investment Path:</strong> The steady ramp in training ($1K→$3K→$7K→$12K→$20K) and maintenance (Lvl1→2→3) drove quality from 65→89 and cut refunds by ~$136K/quarter.</div>
+<div class="insight good"><strong>Cabin Service (Q2+):</strong> At $1/passenger (~$36K/quarter cost), this improved quality perception and likely reduced refunds. Good ROI.</div>
+<div class="insight good"><strong>Conservative Fleet:</strong> Keeping 3 aircraft through most quarters avoided the losses that competitors like Aurora, Oura, and LUXBird suffered from aggressive expansion.</div>
+<div class="insight good"><strong>Debt Paydown:</strong> LT Loans dropped from $2.23M to $1.97M, saving ~$6K/quarter in interest. Cash grew to $1.7M providing strategic flexibility.</div>
+</div>
+<div>
+<h3>What Didn't Work / Missed Opportunities</h3>
+<div class="insight bad"><strong>Cargo delayed to Q5:</strong> Skipped it in Q1-Q2. If started in Q1, could have earned $1-2M more in cumulative Other Revenue by Q6.</div>
+<div class="insight bad"><strong>Quality investment too slow:</strong> Competitors like Group 1 invested in quality earlier and more aggressively. They reached Quality 82 by Q4 while we were at 75.</div>
+<div class="insight bad"><strong>Over-spending on marketing:</strong> $50K/quarter on promo+ad in Q5-Q6 with no clear load factor improvement. Marketing has severe diminishing returns past ~$15-20K total.</div>
+<div class="insight bad"><strong>Not enough fare sales:</strong> Used sparingly in Q3 and Q5-Q6. Group 1 likely used them more aggressively to maintain high load factors.</div>
+<div class="insight bad"><strong>Disposed owned aircraft Q4:</strong> Sold #1 TP-300 and leased #4. Leases cost $132K/quarter vs ~$48K depreciation+financing for owned. This increased costs by ~$84K/quarter.</div>
+<div class="insight bad"><strong>Excess cash sitting idle:</strong> $1.7M in cash earning nothing. Should have been invested in CDs (5% annual = ~$21K/quarter) or used to pay down debt.</div>
+</div>
+</div>
+</div>
+
+<div id="competitors" class="section">
+<h2>COMPETITOR INTELLIGENCE</h2>
+
+<table class="strategy-table">
+<tr><th>Airline</th><th>Strategy</th><th>Q6 Stock</th><th>Q6 Profit</th><th>Q6 Quality</th><th>Outcome</th></tr>
+<tr><td><strong>Group 1</strong></td><td>Conservative, early quality investment, steady profits</td><td>$35.35</td><td>$229K</td><td>82</td><td><span class="tag tag-green">WINNER</span></td></tr>
+<tr><td><strong>Aurora Airways</strong></td><td>Early aggressive expansion (TP-340), lost money Q1-Q4, recovered with highest quality</td><td>$31.78</td><td>$300K</td><td>93</td><td><span class="tag tag-blue">Late Recovery</span></td></tr>
+<tr><td><strong>beAIRlines</strong></td><td>Similar to Strategic Air but better quality timing</td><td>$31.41</td><td>$201K</td><td>88</td><td><span class="tag tag-blue">Strong</span></td></tr>
+<tr><td><strong>Strategic Air (You)</strong></td><td>Conservative, gradual quality ramp, late cargo</td><td>$28.38</td><td>$125K</td><td>89</td><td><span class="tag tag-yellow">Mid-Pack</span></td></tr>
+<tr><td><strong>LUXBird</strong></td><td>Massive expansion (4+ aircraft), high revenue but high costs</td><td>$26.73</td><td>$217K</td><td>72</td><td><span class="tag tag-yellow">Recovered</span></td></tr>
+<tr><td><strong>Oura</strong></td><td>Aggressive expansion, multiple regions, huge losses</td><td>$2.26</td><td>-$340K</td><td>53</td><td><span class="tag tag-red">FAILED</span></td></tr>
+</table>
+
+<h3>Key Competitive Lessons</h3>
+<div class="insight"><strong>Group 1 won by:</strong> Early quality investment (Quality 82 by Q4), consistent profits every quarter (never lost money), moderate revenue growth, likely effective use of fare sales, and NOT over-expanding.</div>
+<div class="insight bad"><strong>Oura/Aurora failed by:</strong> Buying expensive aircraft (TP-340, TP-450), expanding into too many regions simultaneously, running massive losses for multiple quarters. The sim PUNISHES aggressive expansion harshly.</div>
+<div class="insight good"><strong>Late-game profit convergence:</strong> By Q6, 5 of 6 airlines were profitable. The sim may naturally increase demand over time as business index stabilizes. Early profitability and stock price momentum matter MORE than late-game profits.</div>
+</div>
+
+<div id="gaps" class="section">
+<h2>KNOWLEDGE GAPS & UNCERTAINTIES</h2>
+
+<div class="gap-box">
+<h4>Gap 1: Exact Demand Formula</h4>
+<p>We know the inputs (BI, fare, quality, marketing, competition, fare sales) but not the exact coefficients. We'd need controlled experiments (change only one variable at a time) to isolate each factor.</p>
+<p><strong>Experiment for new game:</strong> In Q1, change ONLY fare (keep everything else at defaults). In Q2, change ONLY marketing. This isolates each effect.</p>
+</div>
+
+<div class="gap-box">
+<h4>Gap 2: Optimal Marketing Spend Level</h4>
+<p>We know marketing has diminishing returns past ~$15-20K, but the exact curve is unknown. Group 1's marketing levels aren't visible to us (we only see our own marketing details).</p>
+<p><strong>Hypothesis:</strong> Optimal total marketing spend is $15-25K/quarter (including magazine, sales force). Beyond that, ROI goes negative.</p>
+</div>
+
+<div class="gap-box">
+<h4>Gap 3: Cargo Revenue Model</h4>
+<p>Cargo appeared as $472K in Q5, $512K in Q6. We don't know: what drives cargo revenue growth, what the cargo marketing budget was, how it scales with fleet size, or when it becomes profitable after initial investment.</p>
+<p><strong>Key insight:</strong> The Q2 message said cargo takes "several quarters" to become profitable. Given the $472K in Q5 (started Q2), the payback is ~3 quarters.</p>
+</div>
+
+<div class="gap-box">
+<h4>Gap 4: Aircraft Economics (Buy vs. Lease)</h4>
+<p>Owned aircraft: $2.6M purchase, $48K/qtr depreciation, builds equity. Leased: $132K/quarter, no equity. We don't know disposal values or optimal fleet composition. The Q4 swap (own→lease) cost us significantly.</p>
+<p><strong>Recommendation:</strong> In a new game, BUY aircraft if you can finance them. Leasing is expensive.</p>
+</div>
+
+<div class="gap-box">
+<h4>Gap 5: Stock Price Algorithm Weighting</h4>
+<p>Stock price seems to weigh: cumulative profit (30%?), quality trend (20%?), competitive rank (20%?), consistency (15%?), growth trajectory (15%?). But exact weights unknown.</p>
+<p><strong>Observation:</strong> Group 1 had lower Q6 profit than Aurora ($229K vs $300K) but higher stock ($35.35 vs $31.78). Consistency is heavily rewarded.</p>
+</div>
+
+<div class="gap-box">
+<h4>Gap 6: Fare Sales Exact Discount Amount</h4>
+<p>We see the LF boost from fare sales but not the exact fare reduction. Need to calculate: (Gross Revenue / RPM) during sale quarters vs. non-sale to back out the implicit discount.</p>
+</div>
+</div>
+
+<div id="playbook" class="section">
+<h2>NEXT ROUND PLAYBOOK: THREE STRATEGIES</h2>
+
+<h3>Strategy A: "Conservative Dominance" (Recommended - Lowest Risk)</h3>
+<div class="insight good">Mirrors Group 1's winning approach. Focus on early quality, consistent profits, and restraint.</div>
+
+<table class="strategy-table">
+<tr><th>Quarter</th><th>Fare</th><th>Cabin</th><th>Marketing</th><th>Maintenance</th><th>Training</th><th>Comp</th><th>Fleet</th><th>Special</th></tr>
+<tr><td>Q1</td><td>35c</td><td>Free drinks ($1)</td><td>Promo $5K, Ad $5K, Mag=Yes</td><td>Level 2</td><td>$5,000</td><td>+1.5%</td><td>Keep 3 (2 owned, 1 leased)</td><td>START CARGO immediately</td></tr>
+<tr><td>Q2</td><td>35c</td><td>Keep</td><td>Promo $8K, Ad $8K</td><td>Level 2</td><td>$10,000</td><td>+2.5%</td><td>Keep 3</td><td>Cargo budget $5K</td></tr>
+<tr><td>Q3</td><td>36c</td><td>Keep</td><td>Promo $10K, Ad $10K</td><td>Level 3</td><td>$15,000</td><td>+3.0%</td><td>Keep 3</td><td>Cargo budget $8K</td></tr>
+<tr><td>Q4+</td><td>36-37c</td><td>Keep</td><td>Hold at $10K each</td><td>Level 3</td><td>$15-20K</td><td>+3.0%</td><td>Add 1 if LF>70%</td><td>Accept baggage fees if offered</td></tr>
+</table>
+
+<p><strong>Key rules:</strong></p>
+<ul>
+<li>NEVER let profit go negative. If approaching breakeven, cut marketing first.</li>
+<li>Start cargo in Q1 - don't wait. The 3-quarter payback means Q4+ revenue.</li>
+<li>Invest heavily in quality from Q1 - this is what Group 1 did differently.</li>
+<li>Use fare sales aggressively on underperforming routes (LF < 60%).</li>
+<li>Keep fleet at 3 aircraft until load factors consistently exceed 70%.</li>
+<li>Invest excess cash in CDs (4-5% annual return) rather than letting it sit.</li>
+<li>Pay down debt aggressively only after building $300K+ cash buffer.</li>
+</ul>
+
+<h3>Strategy B: "Quality Blitz" (Medium Risk, Higher Reward)</h3>
+<div class="insight warn">Front-load ALL quality investment. Accept lower Q1-Q2 profits for massive Q3+ gains.</div>
+
+<table class="strategy-table">
+<tr><th>Quarter</th><th>Fare</th><th>Training</th><th>Comp</th><th>Maintenance</th><th>Key Difference</th></tr>
+<tr><td>Q1</td><td>35c</td><td>$15,000</td><td>+3.0%</td><td>Level 3</td><td>Max quality investment from day 1</td></tr>
+<tr><td>Q2</td><td>35c</td><td>$20,000</td><td>+3.5%</td><td>Level 3</td><td>Push quality to 75+ by Q2</td></tr>
+<tr><td>Q3+</td><td>37c+</td><td>$20,000</td><td>+3.5%</td><td>Level 3</td><td>Harvest: raise fares as quality justifies premium</td></tr>
+</table>
+
+<p><strong>Risk:</strong> Q1 profit may be very low or slightly negative due to high compensation costs. But quality reaches 75+ by Q3 vs. Q4-Q5 in the conservative approach, giving a 2-quarter head start on refund reduction.</p>
+
+<h3>Strategy C: "Revenue Maximizer" (Higher Risk)</h3>
+<div class="insight bad">Focus on topline growth through routes and cargo. Accept higher costs.</div>
+
+<table class="strategy-table">
+<tr><th>Quarter</th><th>Key Moves</th><th>Risk Factor</th></tr>
+<tr><td>Q1</td><td>Start cargo, add route 2F, moderate quality investment</td><td>Higher costs, may need short-term loan</td></tr>
+<tr><td>Q2</td><td>Add route 2R, increase to 4 aircraft (buy, don't lease)</td><td>LF may drop below 55% with oversupply</td></tr>
+<tr><td>Q3+</td><td>Use fare sales heavily to fill capacity</td><td>Depends on business index staying above 100</td></tr>
+</table>
+
+<p><strong>Warning:</strong> This is what Oura/LUXBird tried and it led to massive losses. Only pursue if you see other competitors NOT expanding (leaving markets underserved). The sim heavily punishes oversupply.</p>
+
+<h3>Universal Rules for Any Strategy</h3>
+<div class="insight good">
+<strong>The algorithm rewards these behaviors regardless of strategy:</strong>
+<ul style="margin-top:8px">
+<li><strong>Start cargo immediately</strong> - it's worth $400-500K/quarter by Q5</li>
+<li><strong>Never skip quality investment</strong> - refund reduction is the #1 profit lever</li>
+<li><strong>Use fuel contracts (50/50)</strong> when prices are rising to hedge</li>
+<li><strong>Buy CDs with excess cash</strong> - free money at 4-5% annual</li>
+<li><strong>Don't over-market</strong> - $15-20K total is the sweet spot</li>
+<li><strong>Use fare sales on routes with LF < 60%</strong> to boost demand</li>
+<li><strong>Accept baggage/service fees when offered</strong> - additional revenue stream</li>
+<li><strong>Maintain 340+ miles under max daily mileage</strong> to avoid FAA fines</li>
+<li><strong>Stock dividends when offered</strong> boost stock price</li>
+<li><strong>Keep fleet lean</strong> - don't add aircraft unless LF is consistently above 65-70%</li>
+</ul>
+</div>
+</div>
+
+</div>
+
+<script>
+const DATA = [{"q": 0, "stock": 20, "profit": 5253, "revenue": 2183107, "gross_rev": 2688518, "lf": 0.5971, "quality": 65, "reliability": 0.903, "yasm": 0.209, "casm": 0.2083, "fare": 35, "cash": 113440, "lt_loans": 2227540, "equity": 2263809, "fuel": 555445, "maint": 382196, "mktg": 36000, "lease": 132000, "interest": 54919, "cabin_food": 0, "flight_ops": 448319, "pax_svc": 303274, "ga": 166200, "depr": 96000, "other_rev": 0, "commissions": -244625, "refunds": -260786, "op_income": 63673, "cum_profit": 5253}, {"q": 1, "stock": 23.16, "profit": 42980, "revenue": 2247803, "gross_rev": 2768192, "lf": 0.6148, "quality": 64, "reliability": 0.903, "yasm": 0.2152, "casm": 0.2096, "fare": 35, "cash": 160370, "lt_loans": 2182990, "equity": 2306789, "fuel": 558265, "maint": 382196, "mktg": 36000, "lease": 132000, "interest": 53917, "cabin_food": 0, "flight_ops": 448319, "pax_svc": 303274, "ga": 166200, "depr": 96000, "other_rev": 0, "commissions": -251875, "refunds": -268514, "op_income": 125549, "cum_profit": 48233}, {"q": 2, "stock": 23.48, "profit": 50553, "revenue": 2206668, "gross_rev": 2678745, "lf": 0.6251, "quality": 64, "reliability": 0.914, "yasm": 0.225, "casm": 0.218, "fare": 36, "cash": 226616, "lt_loans": 2139331, "equity": 2357342, "fuel": 516559, "maint": 376252, "mktg": 28957, "lease": 132000, "interest": 53174, "cabin_food": 36114, "flight_ops": 426653, "pax_svc": 291130, "ga": 166200, "depr": 96000, "other_rev": 0, "commissions": -241705, "refunds": -230372, "op_income": 136803, "cum_profit": 98786}, {"q": 3, "stock": 24.22, "profit": 61571, "revenue": 2248528, "gross_rev": 2687332, "lf": 0.67, "quality": 68, "reliability": 0.926, "yasm": 0.2258, "casm": 0.2166, "fare": 36, "cash": 295511, "lt_loans": 2096545, "equity": 2418913, "fuel": 521777, "maint": 376071, "mktg": 47260, "lease": 132000, "interest": 52212, "cabin_food": 36114, "flight_ops": 426653, "pax_svc": 291130, "ga": 166200, "depr": 96000, "other_rev": 0, "commissions": -242457, "refunds": -198862, "op_income": 158538, "cum_profit": 160357}, {"q": 4, "stock": 23.27, "profit": 34896, "revenue": 2379284, "gross_rev": 2820635, "lf": 0.6068, "quality": 75, "reliability": 0.931, "yasm": 0.2185, "casm": 0.2133, "fare": 36, "cash": 381041, "lt_loans": 2054615, "equity": 2453809, "fuel": 573010, "maint": 402191, "mktg": 67784, "lease": 132000, "interest": 51028, "cabin_food": 36114, "flight_ops": 448319, "pax_svc": 313274, "ga": 166200, "depr": 96000, "other_rev": 0, "commissions": -254557, "refunds": -194623, "op_income": 108032, "cum_profit": 195253}, {"q": 5, "stock": 29.02, "profit": 133709, "revenue": 2663932, "gross_rev": 2555703, "lf": 0.5498, "quality": 82, "reliability": 0.943, "yasm": 0.1979, "casm": 0.2181, "fare": 37, "cash": 1556101, "lt_loans": 2013523, "equity": 2587518, "fuel": 591402, "maint": 403874, "mktg": 93673, "lease": 264000, "interest": 49864, "cabin_food": 36114, "flight_ops": 448319, "pax_svc": 291130, "ga": 166200, "depr": 96000, "other_rev": 472600, "commissions": -228418, "refunds": -145675, "op_income": 252259, "cum_profit": 328962}, {"q": 6, "stock": 28.38, "profit": 124908, "revenue": 2834815, "gross_rev": 2651642, "lf": 0.5767, "quality": 89, "reliability": 0.953, "yasm": 0.1925, "casm": 0.2155, "fare": 37, "cash": 1700740, "lt_loans": 1973253, "equity": 2712426, "fuel": 638730, "maint": 461092, "mktg": 122678, "lease": 264000, "interest": 48718, "cabin_food": 36114, "flight_ops": 448319, "pax_svc": 303274, "ga": 166200, "depr": 96000, "other_rev": 512555, "commissions": -237119, "refunds": -124627, "op_income": 263363, "cum_profit": 453870}];
+const COMP = [{"q": 0, "Group 1": {"rev": 2688518, "profit": 5253, "stock": 20, "quality": 65}, "Aurora": {"rev": 2688518, "profit": 5253, "stock": 20, "quality": 65}, "beAIRlines": {"rev": 2688518, "profit": 5253, "stock": 20, "quality": 65}, "Strategic Air": {"rev": 2688518, "profit": 5253, "stock": 20, "quality": 65}, "LUXBird": {"rev": 2688518, "profit": 5253, "stock": 20, "quality": 65}, "Oura": {"rev": 2688518, "profit": 5253, "stock": 20, "quality": 65}}, {"q": 1, "Group 1": {"rev": 2742852, "profit": 30634, "stock": 22.33, "quality": 64}, "Aurora": {"rev": 3779934, "profit": -185457, "stock": 16.39, "quality": 66}, "beAIRlines": {"rev": 2768192, "profit": 42980, "stock": 23.16, "quality": 64}, "Strategic Air": {"rev": 2768192, "profit": 42980, "stock": 23.16, "quality": 64}, "LUXBird": {"rev": 2825285, "profit": -26470, "stock": 17.4, "quality": 71}, "Oura": {"rev": 2727284, "profit": 23049, "stock": 21.82, "quality": 64}}, {"q": 2, "Group 1": {"rev": 2829799, "profit": -2267, "stock": 18.64, "quality": 73}, "Aurora": {"rev": 3419860, "profit": -40393, "stock": 14.26, "quality": 70}, "beAIRlines": {"rev": 2690013, "profit": 71253, "stock": 24.9, "quality": 74}, "Strategic Air": {"rev": 2678745, "profit": 50553, "stock": 23.48, "quality": 64}, "LUXBird": {"rev": 2680536, "profit": 82642, "stock": 24.96, "quality": 67}, "Oura": {"rev": 3808803, "profit": -585453, "stock": 16, "quality": 58}}, {"q": 3, "Group 1": {"rev": 3130858, "profit": 190139, "stock": 32.53, "quality": 77}, "Aurora": {"rev": 3168937, "profit": -13536, "stock": 13.72, "quality": 81}, "beAIRlines": {"rev": 2750354, "profit": 98985, "stock": 26.73, "quality": 79}, "Strategic Air": {"rev": 2687332, "profit": 61571, "stock": 24.22, "quality": 68}, "LUXBird": {"rev": 3023100, "profit": 131612, "stock": 28.52, "quality": 69}, "Oura": {"rev": 3996118, "profit": -352492, "stock": 11.8, "quality": 55}}, {"q": 4, "Group 1": {"rev": 3119528, "profit": 105068, "stock": 29.86, "quality": 82}, "Aurora": {"rev": 2915600, "profit": -78464, "stock": 13.59, "quality": 87}, "beAIRlines": {"rev": 3540390, "profit": -81136, "stock": 21.26, "quality": 83}, "Strategic Air": {"rev": 2820635, "profit": 34896, "stock": 23.27, "quality": 75}, "LUXBird": {"rev": 4217944, "profit": -304593, "stock": 21.19, "quality": 70}, "Oura": {"rev": 3912636, "profit": -544326, "stock": 7.88, "quality": 54}}, {"q": 5, "Group 1": {"rev": 2647624, "profit": 235428, "stock": 35.54, "quality": 82}, "Aurora": {"rev": 3118668, "profit": 38109, "stock": 22.19, "quality": 91}, "beAIRlines": {"rev": 3626761, "profit": 175668, "stock": 28.18, "quality": 86}, "Strategic Air": {"rev": 2555703, "profit": 133709, "stock": 29.02, "quality": 82}, "LUXBird": {"rev": 4530656, "profit": 53504, "stock": 21.69, "quality": 71}, "Oura": {"rev": 4076891, "profit": -418882, "stock": 4.53, "quality": 53}}, {"q": 6, "Group 1": {"rev": 2641136, "profit": 229113, "stock": 35.35, "quality": 82}, "Aurora": {"rev": 3461380, "profit": 300129, "stock": 31.78, "quality": 93}, "beAIRlines": {"rev": 3702243, "profit": 201352, "stock": 31.41, "quality": 88}, "Strategic Air": {"rev": 2651642, "profit": 124908, "stock": 28.38, "quality": 89}, "LUXBird": {"rev": 4726352, "profit": 217220, "stock": 26.73, "quality": 72}, "Oura": {"rev": 4181520, "profit": -339925, "stock": 2.26, "quality": 53}}];
+const ROUTES = [{"q": 0, "routes": [{"m": "2A", "fl": 2, "sa": 60, "ss": 35, "lf": 0.583}, {"m": "2B", "fl": 3, "sa": 90, "ss": 49, "lf": 0.544}, {"m": "2C", "fl": 2, "sa": 60, "ss": 37, "lf": 0.617}, {"m": "2D", "fl": 3, "sa": 90, "ss": 54, "lf": 0.6}, {"m": "200", "fl": 3, "sa": 90, "ss": 59, "lf": 0.656}]}, {"q": 1, "routes": [{"m": "2A", "fl": 2, "sa": 60, "ss": 36, "lf": 0.6}, {"m": "2B", "fl": 3, "sa": 90, "ss": 51, "lf": 0.567}, {"m": "2C", "fl": 2, "sa": 60, "ss": 38, "lf": 0.633}, {"m": "2D", "fl": 3, "sa": 90, "ss": 55, "lf": 0.611}, {"m": "200", "fl": 3, "sa": 90, "ss": 61, "lf": 0.678}]}, {"q": 2, "routes": [{"m": "2A", "fl": 2, "sa": 60, "ss": 36, "lf": 0.6}, {"m": "2B", "fl": 2, "sa": 60, "ss": 36, "lf": 0.6}, {"m": "2C", "fl": 2, "sa": 60, "ss": 38, "lf": 0.633}, {"m": "2D", "fl": 3, "sa": 90, "ss": 55, "lf": 0.611}, {"m": "200", "fl": 3, "sa": 90, "ss": 60, "lf": 0.667}]}, {"q": 3, "routes": [{"m": "2A", "fl": 2, "sa": 60, "ss": 41, "lf": 0.683}, {"m": "2B", "fl": 2, "sa": 60, "ss": 42, "lf": 0.7}, {"m": "2C", "fl": 2, "sa": 60, "ss": 39, "lf": 0.65}, {"m": "2D", "fl": 3, "sa": 90, "ss": 57, "lf": 0.633}, {"m": "200", "fl": 3, "sa": 90, "ss": 62, "lf": 0.689}]}, {"q": 4, "routes": [{"m": "2A", "fl": 2, "sa": 60, "ss": 36, "lf": 0.6}, {"m": "2B", "fl": 2, "sa": 60, "ss": 35, "lf": 0.583}, {"m": "2C", "fl": 2, "sa": 60, "ss": 38, "lf": 0.633}, {"m": "2D", "fl": 3, "sa": 90, "ss": 54, "lf": 0.6}, {"m": "200", "fl": 3, "sa": 90, "ss": 58, "lf": 0.644}, {"m": "2F", "fl": 1, "sa": 30, "ss": 17, "lf": 0.567}]}, {"q": 5, "routes": [{"m": "2A", "fl": 2, "sa": 60, "ss": 32, "lf": 0.533}, {"m": "2B", "fl": 2, "sa": 60, "ss": 34, "lf": 0.567}, {"m": "2C", "fl": 2, "sa": 60, "ss": 33, "lf": 0.55}, {"m": "2D", "fl": 3, "sa": 90, "ss": 47, "lf": 0.522}, {"m": "200", "fl": 3, "sa": 90, "ss": 49, "lf": 0.544}, {"m": "2F", "fl": 1, "sa": 30, "ss": 19, "lf": 0.633}]}, {"q": 6, "routes": [{"m": "2A", "fl": 2, "sa": 60, "ss": 32, "lf": 0.533}, {"m": "2B", "fl": 2, "sa": 60, "ss": 32, "lf": 0.533}, {"m": "2C", "fl": 2, "sa": 60, "ss": 34, "lf": 0.567}, {"m": "2D", "fl": 4, "sa": 120, "ss": 74, "lf": 0.617}, {"m": "200", "fl": 3, "sa": 90, "ss": 50, "lf": 0.556}, {"m": "2F", "fl": 1, "sa": 30, "ss": 21, "lf": 0.7}]}];
+
+const Q = DATA.map(d => 'Q' + d.q);
+const colors = {
+    'Strategic Air': '#3b82f6',
+    'Group 1': '#4ade80',
+    'Aurora': '#f59e0b',
+    'beAIRlines': '#a78bfa',
+    'LUXBird': '#ec4899',
+    'Oura': '#ef4444'
+};
+
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#334155';
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+// Stock Price Chart
+new Chart(document.getElementById('stockChart'), {
+    type: 'line',
+    data: {
+        labels: Q,
+        datasets: Object.keys(colors).map(name => ({
+            label: name,
+            data: COMP.map(c => {
+                const key = name === 'Aurora' ? 'Aurora' : name;
+                return c[key] ? c[key].stock : null;
+            }),
+            borderColor: colors[name],
+            backgroundColor: colors[name] + '20',
+            borderWidth: name === 'Strategic Air' ? 3 : 1.5,
+            pointRadius: name === 'Strategic Air' ? 4 : 2,
+            tension: 0.3
+        }))
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }, scales: { y: { title: { display: true, text: 'Stock Price ($)' } } } }
+});
+
+// Profit Chart
+new Chart(document.getElementById('profitChart'), {
+    type: 'bar',
+    data: {
+        labels: Q,
+        datasets: Object.keys(colors).map(name => ({
+            label: name,
+            data: COMP.map(c => {
+                const key = name === 'Aurora' ? 'Aurora' : name;
+                return c[key] ? c[key].profit : null;
+            }),
+            backgroundColor: colors[name] + '80',
+            borderColor: colors[name],
+            borderWidth: 1
+        }))
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }, scales: { y: { title: { display: true, text: 'Net Profit ($)' } } } }
+});
+
+// Quality & Reliability
+new Chart(document.getElementById('qualityChart'), {
+    type: 'line',
+    data: {
+        labels: Q,
+        datasets: [
+            { label: 'Quality', data: DATA.map(d => d.quality), borderColor: '#3b82f6', backgroundColor: '#3b82f620', borderWidth: 2, yAxisID: 'y', tension: 0.3 },
+            { label: 'Reliability', data: DATA.map(d => (d.reliability * 100).toFixed(1)), borderColor: '#4ade80', backgroundColor: '#4ade8020', borderWidth: 2, yAxisID: 'y1', tension: 0.3 }
+        ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { type: 'linear', position: 'left', title: { display: true, text: 'Quality Score' }, min: 60 }, y1: { type: 'linear', position: 'right', title: { display: true, text: 'Reliability (%)' }, min: 89, grid: { drawOnChartArea: false } } } }
+});
+
+// Revenue Composition
+new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: {
+        labels: Q,
+        datasets: [
+            { label: 'Net Pax Revenue', data: DATA.map(d => d.revenue - d.other_rev), backgroundColor: '#3b82f680', borderColor: '#3b82f6', borderWidth: 1 },
+            { label: 'Other Revenue (Cargo+Fees)', data: DATA.map(d => d.other_rev), backgroundColor: '#4ade8080', borderColor: '#4ade80', borderWidth: 1 }
+        ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { stacked: true, title: { display: true, text: 'Revenue ($)' } } } }
+});
+
+// Cost Structure
+new Chart(document.getElementById('costChart'), {
+    type: 'bar',
+    data: {
+        labels: Q,
+        datasets: [
+            { label: 'Fuel', data: DATA.map(d => d.fuel), backgroundColor: '#ef444480' },
+            { label: 'Flight Ops', data: DATA.map(d => d.flight_ops), backgroundColor: '#f59e0b80' },
+            { label: 'Maintenance', data: DATA.map(d => d.maint), backgroundColor: '#8b5cf680' },
+            { label: 'Pax Service', data: DATA.map(d => d.pax_svc), backgroundColor: '#06b6d480' },
+            { label: 'Lease+Depr', data: DATA.map(d => d.lease + d.depr), backgroundColor: '#64748b80' },
+            { label: 'Marketing', data: DATA.map(d => d.mktg), backgroundColor: '#ec489980' },
+            { label: 'G&A+Interest', data: DATA.map(d => d.ga + d.interest), backgroundColor: '#78716c80' }
+        ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { x: { stacked: true }, y: { stacked: true, title: { display: true, text: 'Total Costs ($)' } } } }
+});
+
+// Load Factor & YASM vs CASM
+new Chart(document.getElementById('lfChart'), {
+    type: 'line',
+    data: {
+        labels: Q,
+        datasets: [
+            { label: 'Load Factor', data: DATA.map(d => (d.lf * 100).toFixed(1)), borderColor: '#3b82f6', borderWidth: 2, yAxisID: 'y', tension: 0.3 },
+            { label: 'YASM (cents)', data: DATA.map(d => (d.yasm * 100).toFixed(2)), borderColor: '#4ade80', borderWidth: 2, yAxisID: 'y1', tension: 0.3 },
+            { label: 'CASM (cents)', data: DATA.map(d => (d.casm * 100).toFixed(2)), borderColor: '#ef4444', borderWidth: 2, yAxisID: 'y1', tension: 0.3, borderDash: [5,5] }
+        ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { type: 'linear', position: 'left', title: { display: true, text: 'Load Factor (%)' }, min: 50 }, y1: { type: 'linear', position: 'right', title: { display: true, text: 'Cents per ASM' }, grid: { drawOnChartArea: false } } } }
+});
+</script>
+</body>
+</html>
